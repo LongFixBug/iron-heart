@@ -1,0 +1,5 @@
+{
+  "name": "Luminous 3D Heart",
+  "description": "An interactive 3D heart composed of light effects. Rotate it by moving your mouse across the screen. Created with React, TypeScript, and Tailwind CSS.",
+  "requestFramePermissions": []
+}

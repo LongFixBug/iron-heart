@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Luminous 3D Heart</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #0A0F1A; /* Slightly darker slate */ }
+    #root { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; position: relative; }
+
+    @keyframes enhancedSparkle { /* Revised to not conflict with floatAround's transform */
+      0%, 100% {
+        opacity: var(--opacity-min, 0.5);
+        transform: scale(0.95);
+        filter: brightness(0.9);
+      }
+      50% {
+        opacity: var(--opacity-max, 1);
+        transform: scale(1.05);
+        filter: brightness(1.6);
+      }
+    }
+    
+    @keyframes pulseSimple {
+      0%, 100% { opacity: var(--opacity-min, 0.4); }
+      50% { opacity: var(--opacity-max, 1); }
+    }
+
+    @keyframes floatAround {
+      0% { transform: translate3d(0, 0, 0); } 
+      25% { transform: translate3d(var(--float-dx1, 2px), var(--float-dy1, -3px), var(--float-dz1, 1px)); }
+      50% { transform: translate3d(var(--float-dx2, -1px), var(--float-dy2, 2px), var(--float-dz2, -2px)); }
+      75% { transform: translate3d(var(--float-dx3, -2px), var(--float-dy3, -2px), var(--float-dz3, 3px)); }
+      100% { transform: translate3d(0, 0, 0); }
+    }
+
+    @keyframes driftMiniHeart {
+      0% { transform: translate3d(0,0,0) rotateZ(0deg); }
+      33% { transform: translate3d(var(--drift-dx1, 5px), var(--drift-dy1, -8px), var(--drift-dz1, 2px)) rotateZ(var(--drift-rot1, 4deg)); }
+      66% { transform: translate3d(var(--drift-dx2, -4px), var(--drift-dy2, 6px), var(--drift-dz2, -3px)) rotateZ(var(--drift-rot2, -3deg)); }
+      100% { transform: translate3d(0,0,0) rotateZ(0deg); }
+    }
+
+    /* Shooting Star Animations */
+    @keyframes shootAcrossStar {
+      0% {
+        transform: translate(var(--start-x), var(--start-y)) rotate(var(--angle-deg));
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--end-x), var(--end-y)) rotate(var(--angle-deg));
+        opacity: 0;
+      }
+    }
+    
+    /* Firework Animations */
+    @keyframes fireworkRocketFly {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+      }
+      80% {
+        opacity: 1;
+      }
+      100% {
+        transform: translate(calc(var(--rocket-target-x) - var(--rocket-start-x)), calc(var(--rocket-target-y) - var(--rocket-start-y))) scale(0.5);
+        opacity: 0;
+      }
+    }
+
+    @keyframes fireworkParticleBurst {
+      0% {
+        transform: translate(0, 0) scale(1.8); /* Start slightly larger for impact */
+        opacity: 1;
+        filter: brightness(3); /* Brighter initial burst */
+      }
+      100% {
+        transform: translate(var(--explode-x), var(--explode-y)) scale(0.1); /* Move outwards, fall, and shrink */
+        opacity: 0;
+        filter: brightness(0.5);
+      }
+    }
+
+    .shooting-star {
+      position: absolute;
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 30%, rgba(255,255,255,0.8) 70%, rgba(255,255,255,0) 100%);
+      border-radius: 50px; /* Rounded ends */
+      filter: drop-shadow(0 0 8px #ffffffcc) drop-shadow(0 0 15px #ffffffaa); /* More intense glow */
+      transform-origin: center left; /* Rotate around the "head" */
+      pointer-events: none;
+      will-change: transform, opacity;
+    }
+
+    .firework-rocket {
+      /* CSS variables for start/target will be set via style prop */
+      left: var(--rocket-start-x);
+      top: var(--rocket-start-y);
+      position: absolute;
+      border-radius: 50%;
+      box-shadow: 0 0 8px 2px currentColor;
+      pointer-events: none;
+      will-change: transform, opacity;
+    }
+    
+    .firework-particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      will-change: transform, opacity;
+      /* box-shadow is set in component style for color dynamic */
+    }
+
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
