@@ -1,149 +1,275 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-interface Song {
+// Định nghĩa cấu trúc cho một bài hát
+interface Track {
   title: string;
+  artist: string;
   src: string;
+  artwork: string; // Đường dẫn đến ảnh bìa
 }
 
-const songs: Song[] = [
-  { title: "Nơi Này Có Anh", src: "/music/NoiNayCoAnh-SonTungMTP-4772041.mp3" },
-  { title: "Mộc miên", src: "/music/MocMien-ChiXeTheFlob-36844127.mp3" },
-  // Add more songs here if you have them
-  // IMPORTANT: Playing directly from Google Drive can be unreliable due to CORS, cookies, or link changes by Google.
-  // For best results, download these files and place them in your project's 'public/music' folder,
-  // then update the 'src' paths to local paths (e.g., '/music/your-song.mp3').
+// ==========================================================================
+// == ✨ QUAN TRỌNG: HÃY THAY THẾ DANH SÁCH NHẠC CỦA BẠN VÀO ĐÂY ✨ ==
+// ==========================================================================
+// Gợi ý: Đặt file nhạc và ảnh trong thư mục /public của dự án
+const playlist: Track[] = [
+  {
+    title: 'Noi Nay Co Anh',
+    artist: 'Sơn tùng MTP',
+    src: '/music/NoiNayCoAnh-SonTungMTP-4772041.mp3',       // Ví dụ: /public/music/nevada.mp3
+    artwork: '/images/NoiNayCoAnh-SonTungMTP-4772041.webp', // Ví dụ: /public/images/nevada.jpg
+  },
+  {
+    title: 'Mộc miên',
+    artist: 'Chi Xê',
+    src: '/music/MocMien-ChiXeTheFlob-36844127.mp3',
+    artwork: '/images/chixe2.jpg',
+  },
 ];
+// ==========================================================================
 
-const MusicPlayer: React.FC = () => {
-  const [currentSongIndex, setCurrentSongIndex] = useState<number | null>(null);
+const MusicPlayer = () => {
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(0.2);
+
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  // === XỬ LÝ TỰ ĐỘNG PHÁT ===
   useEffect(() => {
-    if (audioRef.current && currentSongIndex !== null) {
-      audioRef.current.src = songs[currentSongIndex].src;
-      if (isPlaying) {
-        // Attempt to play and catch any errors (e.g., browser restrictions)
-        audioRef.current.play().catch(error => {
-          console.error("Error playing audio:", error);
-          // Optionally, set isPlaying to false if autoplay fails
-          // setIsPlaying(false);
+    const audio = audioRef.current;
+    if (!audio) return;
+// ✨✨ DÒNG MÃ THÊM VÀO ĐỂ SỬA LỖI ÂM LƯỢNG ✨✨
+    audio.volume = volume; 
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          console.log("Autoplay bị chặn, chờ người dùng tương tác.");
+          const handleFirstInteraction = () => {
+            audio.play().then(() => setIsPlaying(true));
+            window.removeEventListener('click', handleFirstInteraction);
+            window.removeEventListener('keydown', handleFirstInteraction);
+          };
+          window.addEventListener('click', handleFirstInteraction);
+          window.addEventListener('keydown', handleFirstInteraction);
         });
-      } else {
-        audioRef.current.pause();
-      }
     }
-  }, [currentSongIndex]); // Only re-run when currentSongIndex changes initially
+  }, []);
 
-  useEffect(() => {
-    // Separate effect to handle play/pause state changes after a song is loaded
-    if (audioRef.current && currentSongIndex !== null) {
-      if (isPlaying) {
-        audioRef.current.play().catch(error => console.error("Error playing audio:", error));
-      } else {
-        audioRef.current.pause();
-      }
-    }
-  }, [isPlaying, currentSongIndex]); // React to isPlaying changes for an already selected song
-
-
-  const selectSong = (index: number) => {
-    if (currentSongIndex === index) {
-      // If the same song is clicked, toggle play/pause
-      togglePlayPause();
-    } else {
-      setCurrentSongIndex(index);
-      setIsPlaying(true); // Auto-play when a new song is selected
-    }
+  // Cập nhật thời gian thực và thanh tiến trình
+  const handleTimeUpdate = () => {
+    if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
+  };
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) setDuration(audioRef.current.duration);
   };
 
-  const togglePlayPause = () => {
-    if (currentSongIndex === null && songs.length > 0) {
-      // If no song is selected, play the first one
-      setCurrentSongIndex(0);
-      setIsPlaying(true);
-    } else if (audioRef.current) {
-      setIsPlaying(!isPlaying);
-    }
+  // === CÁC HÀM ĐIỀU KHIỂN ===
+  const handlePlayPause = () => {
+    if (isPlaying) audioRef.current?.pause();
+    else audioRef.current?.play();
+    setIsPlaying(!isPlaying);
+  };
+  const handleNext = () => setCurrentTrackIndex((prev) => (prev + 1) % playlist.length);
+  const handlePrev = () => setCurrentTrackIndex((prev) => (prev - 1 + playlist.length) % playlist.length);
+  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (audioRef.current) audioRef.current.currentTime = Number(e.target.value);
+  };
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = Number(e.target.value);
+    setVolume(newVolume);
+    if(audioRef.current) audioRef.current.volume = newVolume;
   };
   
-  const handleAudioEnded = () => {
-    setIsPlaying(false); 
-    // Optional: Implement play next song
-    // if (currentSongIndex !== null && currentSongIndex < songs.length - 1) {
-    //   setCurrentSongIndex(currentSongIndex + 1);
-    //   setIsPlaying(true);
-    // } else {
-    //   // Optionally loop to the first song or stop
-    //   setCurrentSongIndex(0); // Loop to first
-    //   setIsPlaying(true);
-    // }
+  // Khi đổi bài, tự động phát nếu đang phát
+  useEffect(() => {
+    if (isPlaying && audioRef.current) {
+      audioRef.current.play().catch(e => console.error(e));
+    }
+  }, [currentTrackIndex]);
+
+  // === CÁC HÀM TIỆN ÍCH ===
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
+  const currentTrack = playlist[currentTrackIndex];
+
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: '20px',
-      left: '20px',
-      backgroundColor: 'rgba(0,0,0,0.75)',
-      padding: '15px',
-      borderRadius: '10px',
-      color: 'white',
-      zIndex: 1000,
-      fontFamily: 'Arial, sans-serif',
-      minWidth: '250px',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-    }}>
-      <h4 style={{ marginTop: 0, marginBottom: '12px', borderBottom: '1px solid #555', paddingBottom: '8px' }}>Music Player</h4>
-      <div style={{ marginBottom: '12px', maxHeight: '150px', overflowY: 'auto' }}>
-        {songs.map((song, index) => (
-          <button
-            key={song.src}
-            onClick={() => selectSong(index)}
-            title={`Play ${song.title}`}
-            style={{
-              display: 'block',
-              width: '100%',
-              padding: '10px',
-              marginBottom: '6px',
-              backgroundColor: currentSongIndex === index && isPlaying ? '#28a745' : (currentSongIndex === index ? '#ffc107' : '#444'),
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              textAlign: 'left',
-              fontSize: '0.9em',
-              transition: 'background-color 0.2s ease'
-            }}
-          >
-            {song.title}
-          </button>
-        ))}
+    <div style={styles.playerContainer}>
+      <audio
+        ref={audioRef}
+        src={currentTrack.src}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleNext}
+      />
+
+      {/* === CỤM ẢNH VÀ ÂM LƯỢNG === */}
+      <div style={styles.artworkVolumeContainer}>
+        <img src={currentTrack.artwork} alt="Artwork" style={isPlaying ? styles.artworkImagePlaying : styles.artworkImage} />
+        <div style={styles.volumeContainer}>
+            <span style={{fontSize: '12px', marginBottom: '-80px'}}>🔊</span>
+            <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={handleVolumeChange}
+                style={styles.volumeSlider}
+            />
+        </div>
       </div>
-      <audio ref={audioRef} onEnded={handleAudioEnded} />
-      <button
-        onClick={togglePlayPause}
-        style={{
-          padding: '10px 15px',
-          backgroundColor: isPlaying ? '#dc3545' : '#28a745',
-          color: 'white',
-          border: 'none',
-          borderRadius: '5px',
-          cursor: 'pointer',
-          minWidth: '90px',
-          fontSize: '1em',
-          fontWeight: 'bold'
-        }}
-      >
-        {currentSongIndex === null ? 'Play' : (isPlaying ? 'Pause' : 'Play')}
-      </button>
-      {currentSongIndex !== null && (
-        <p style={{ marginTop: '10px', marginBottom: 0, fontSize: '0.85em', color: '#eee' }}>
-          Now Playing: {songs[currentSongIndex].title}
-        </p>
-      )}
+      
+      {/* === CỤM ĐIỀU KHIỂN CHÍNH === */}
+      <div style={styles.controlsContainer}>
+        <div style={styles.trackInfo}>
+          <div style={styles.trackTitle}>{currentTrack.title}</div>
+          <div style={styles.trackArtist}>{currentTrack.artist}</div>
+        </div>
+        <div style={styles.mainControls}>
+          <button onClick={handlePrev} style={{...styles.controlButton, ...styles.sideButton}}>«</button>
+          <button onClick={handlePlayPause} style={{...styles.controlButton, ...styles.playButton}}>
+            {isPlaying ? '❚❚' : '►'}
+          </button>
+          <button onClick={handleNext} style={{...styles.controlButton, ...styles.sideButton}}>»</button>
+        </div>
+        <div style={styles.progressContainer}>
+          <span style={styles.timeText}>{formatTime(currentTime)}</span>
+          <input
+            type="range"
+            min="0"
+            max={duration || 0}
+            value={currentTime}
+            onChange={handleProgressChange}
+            style={styles.progressBar}
+          />
+          <span style={styles.timeText}>{formatTime(duration)}</span>
+        </div>
+      </div>
     </div>
   );
 };
+
+
+// ==========================================================================
+// == ✨ CSS STYLES CHO GIAO DIỆN NGHE NHẠC ✨ ==
+// ==========================================================================
+const styles: { [key: string]: React.CSSProperties } = {
+  playerContainer: {
+    position: 'fixed',
+    bottom: '20px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: '90%',
+    maxWidth: '480px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '20px',
+    padding: '15px',
+    borderRadius: '15px',
+    backgroundColor: 'rgba(25, 25, 25, 0.9)',
+    backdropFilter: 'blur(10px)',
+    color: '#fff',
+    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    zIndex: 9999,
+  },
+  // Nhóm ảnh và âm lượng
+  artworkVolumeContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+  },
+  // Ảnh nghệ sĩ hình tròn
+  artworkImage: {
+    width: '80px',
+    height: '80px',
+    borderRadius: '50%', // << THAY ĐỔI: Chuyển thành hình tròn
+    objectFit: 'cover',
+    border: '2px solid rgba(255, 255, 255, 0.1)',
+  },
+  artworkImagePlaying: {
+    width: '80px',
+    height: '80px',
+    borderRadius: '50%', // << THAY ĐỔI: Chuyển thành hình tròn
+    objectFit: 'cover',
+    border: '2px solid #1DB954',
+    animation: 'spin 8s linear infinite',
+  },
+  // Thanh âm lượng dọc
+  volumeContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '80px',
+  },
+  volumeSlider: {
+    appearance: 'none',
+    width: '70px', // Chiều dài của thanh trượt
+    height: '5px',  // Độ dày của thanh
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: '5px',
+    transform: 'rotate(-90deg)', // << THAY ĐỔI: Xoay thanh trượt thành chiều dọc
+    cursor: 'pointer',
+  },
+  // Các phần còn lại
+  controlsContainer: {
+    flexGrow: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    gap: '5px',
+    width: 'calc(100% - 160px)',
+  },
+  trackInfo: { textAlign: 'center', marginBottom: '5px' },
+  trackTitle: { fontSize: '16px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  trackArtist: { fontSize: '12px', color: '#aaa' },
+  mainControls: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px' },
+  controlButton: { background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '18px' },
+  playButton: { fontSize: '24px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1DB954', borderRadius: '50%' },
+  sideButton: { color: '#ccc' },
+  progressContainer: { display: 'flex', alignItems: 'center', gap: '10px', width: '100%' },
+  timeText: { fontSize: '11px', color: '#aaa' },
+  progressBar: { flexGrow: 1, appearance: 'none', width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.3)', borderRadius: '5px', outline: 'none', cursor: 'pointer' },
+};
+
+// Thêm keyframes cho animation quay đĩa và style cho thumb của thanh trượt
+const styleSheet = document.createElement("style");
+styleSheet.type = "text/css";
+styleSheet.innerText = `
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #333;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #333;
+}
+`;
+document.head.appendChild(styleSheet);
+
 
 export default MusicPlayer;

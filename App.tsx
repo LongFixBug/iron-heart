@@ -1,12 +1,10 @@
 import React, { useState, useRef, useCallback } from 'react';
-import Heart3D from './components/Heart3D';
+
 import ParticleSystem from './components/ParticleSystem';
 import FireworksEffect, { FireworksEffectRef } from './components/FireworksEffect';
 import MusicPlayer from './components/MusicPlayer';
-import MiniHeartsSwarm from './components/MiniHeartsSwarm';
 
-// FireworksEffectRef is now imported from FireworksEffect.tsx
-
+import FloatingCards from './components/FloatingCards'; // ✨ 1. Import component mới
 
 const App: React.FC = () => {
   const [rotation, setRotation] = useState({ x: 0, y: 0 });
@@ -41,12 +39,11 @@ const App: React.FC = () => {
       const clickX = event.clientX - rect.left;
       const clickY = event.clientY - rect.top;
 
-      // Trigger firework from bottom, near clickX
       if (fireworksRef.current) {
-        fireworksRef.current.launchFirework(clickX, clickY); // Use clickY as target Y
+        fireworksRef.current.launchFirework(clickX, clickY);
       }
     }
-  }, [fireworksRef]); // Add fireworksRef to dependency array
+  }, [fireworksRef]);
   
   const perspectiveStyle: React.CSSProperties = {
     perspective: '1200px', 
@@ -75,14 +72,18 @@ const App: React.FC = () => {
       role="application"
       aria-label="Interactive 3D Heart Animation"
     >
-      {/* Screen-space effects - rendered before the main 3D container so they appear "behind" if z-indexes were default, but they are absolutely positioned anyway */}
+      {/* Các hiệu ứng không gian màn hình (nằm ngoài khối xoay 3D) */}
       <FireworksEffect ref={fireworksRef} />
       <MusicPlayer />
 
+      {/* Khối chứa các hiệu ứng xoay 3D */}
       <div style={mainViewStyle}>
         <ParticleSystem count={75} /> 
-        <Heart3D /> 
-        <MiniHeartsSwarm count={20} />
+       
+        
+        {/* ✨ 2. Thêm component card bay vào đây để nó xoay cùng trái tim ✨ */}
+        <FloatingCards />
+
       </div>
      
     </div>
